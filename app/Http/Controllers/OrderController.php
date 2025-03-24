@@ -74,10 +74,39 @@ class OrderController extends Controller
             ], 500);    
     }
     }
-    public function getOrder($id)
+
+    public function index()
+    {
+        $orders = Order::all();
+
+        return response()->json($orders);
+    }
+
+    // Show a single order with its order items
+    public function show($id)
+    {
+        $order = Order::with('orderItems')->findOrFail($id);
+
+        return response()->json($order);
+    }
+
+    // Update an order's details
+    public function update(Request $request, $id)
     {
         $order = Order::findOrFail($id);
+
+        $order->update($request->all());  // Update with the provided data
+
         return response()->json($order);
+    }
+
+    // Delete an order
+    public function destroy($id)
+    {
+        $order = Order::findOrFail($id);
+        $order->delete();
+
+        return response()->json(['message' => 'Order deleted successfully']);
     }
 }
 
