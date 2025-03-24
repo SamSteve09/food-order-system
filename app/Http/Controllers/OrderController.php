@@ -60,7 +60,7 @@ class OrderController extends Controller
             DB::commit();
             return response()->json([
                 'order' => $order,
-                'order_items' => $order->items
+                'order_items' => $order_items
             ],201);
         }catch (\Exception $e) {
             // If an error occurs, rollback the transaction
