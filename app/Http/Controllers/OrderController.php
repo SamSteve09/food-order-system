@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\MenuItem;
-
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
@@ -20,41 +21,59 @@ class OrderController extends Controller
             'items' => 'required|array', // Expecting an array of items
             'items.*.menu_item_id' => 'required|exists:menu_items,id', // Validate each item
             'items.*.quantity' => 'required|integer|min:1', // Quantity should be at least 1
-            'total_price' => 'required|numeric', // Total price
             'store_table_id' => 'required|exists:store_tables,id', // Store table ID should exist
+            'store_id' => 'required|exists:stores,id', // Store ID should exist
             'customer_id' => 'nullable|exists:customers,id', // Customer ID should exist if provided
         ]);
     
         foreach ($request->items as $item) {
-            $subtotal = $item['quantity'] * $item['price']; // Calculate the subtotal
-            $total_price += $subtotal; // Add to the total price
+            $menuItem = MenuItem::findOrFail($item['menu_item_id']); // Find the menu item
+            $subtotal_price = $menuItem->price * $item['quantity'];
+            Log::debug($subtotal_price);
+            $total_price += $subtotal_price; // Add to the total price
             // Add item to the order items array (for later saving)
-            $orderItems[] = [
+            $order_items[] = [
                 'menu_item_id' => $item['menu_item_id'],
                 'quantity' => $item['quantity'],
-                'price' => $item['price'],
-                'subtotal' => $subtotal,
+                'subtotal_price' => $subtotal_price,
             ];
         }
-        $order = Order::create([
-            'total_price' => $total_price,
-            'status' => 'pending',
-            'store_table_id' => $request->store_table_id,
-            'customer_id' => $request->customer_id,
-        ]);
+        DB::beginTransaction();
+        try{
+            $order = Order::create([
+                'total_price' => $total_price,
+                'status' => 'pending',
+                'store_table_id' => $request->store_table_id,
+                'customer_id' => $request->customer_id,
+                'store_id' => $request->store_id
+            ]);
             // Associate the order items with the created order
-        foreach ($orderItems as $orderItem) {
-            $order->items()->create($orderItem); // Save each order item with the order_id
-        }
-    
-        // Return the created order along with order items
-        return response()->json([
-            'order' => $order,
-            'items' => $order->items
-        ]);
-    }
-    
+            foreach ($order_items as $order_item) {
+                $order_item['order_id'] = $order->id;
+                OrderItem::create($order_item);
+            }
+                        // Insert all order items
+            if (count($orderItems) > 0) {
+                $order->items()->createMany($orderItems); // Use createMany to insert multiple items
+            }
+            // Return the created order along with order items
 
+            DB::commit();
+            return response()->json([
+                'order' => $order,
+                'order_items' => $order->items
+            ],201);
+        }catch (\Exception $e) {
+            // If an error occurs, rollback the transaction
+            DB::rollBack();
+
+            // Return error response with the exception message
+            return response()->json([
+                'error' => 'Something went wrong while processing the order.',
+                'message' => $e->getMessage()
+            ], 500);    
+    }
+    }
     public function getOrder($id)
     {
         $order = Order::findOrFail($id);
