@@ -51,12 +51,11 @@ class OrderController extends Controller
             foreach ($order_items as $order_item) {
                 $order_item['order_id'] = $order->id;
                 OrderItem::create($order_item);
+                $menuItem = MenuItem::find($order_item['menu_item_id']);
+                $menuItem->update([
+                    'order_frequency' => $menuItem->order_frequency + $order_item['quantity']
+                ]);
             }
-                        // Insert all order items
-            if (count($orderItems) > 0) {
-                $order->items()->createMany($orderItems); // Use createMany to insert multiple items
-            }
-            // Return the created order along with order items
 
             DB::commit();
             return response()->json([
