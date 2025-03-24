@@ -21,7 +21,7 @@ class MenuItemController extends Controller
     public function store(Request $request)
     {
         // Validate incoming request data
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:100',
             'description' => 'nullable|string|max:255',
             'price' => 'required|numeric',
@@ -32,16 +32,7 @@ class MenuItemController extends Controller
         ]);
 
         // Create a new menu item
-        $menuItem = MenuItem::create([
-            'name' => $request->name,
-            'description' => $request->description,
-            'price' => $request->price,
-            'category' => $request->category,
-            'order_frequency' => $request->order_frequency,
-            'availability' => $request->availability,
-            'image' => $request->image,
-            'date_added' => now(),
-        ]);
+        $menuItem = MenuItem::create($validated + ['menu_item_date' => now()]);
 
         return response()->json($menuItem, 201);
     }
