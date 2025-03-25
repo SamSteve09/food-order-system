@@ -13,7 +13,8 @@ Alasan saya memilih MySQL karena pada kasus order makanan ini dibutuhkan ACIDity
 -Membuat order (customer) \
 -Melihat menu berdasarkan kategori,kepopuleran,dan rating (customer) \
 -CRUD menu (owner) \
+-CRUD staff (owner) \
 -CRUD order (cashier) \
 -CR transaction (cashier) (belum) \
 -CRUD transaction (owner,supervisor) (belum) \
--Membuat review makanan yang dipesan (customer) (belum)
+-Membuat review makanan yang dipesan (customer) (belum) 
